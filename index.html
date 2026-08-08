@@ -170,7 +170,6 @@
 
                     <div class="mt-6 pt-4 border-t grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-3">
-                            <!-- FITUR SAKELAR TTD PENERIMA -->
                             <div class="p-3 card-sub rounded-xl border border-slate-700/50 space-y-2">
                                 <div class="flex items-center justify-between">
                                     <label for="enableTtdPenerima" class="text-xs font-semibold cursor-pointer select-none">✍️ Tampilkan Kolom TTD Penerima di Dokumen</label>
@@ -237,6 +236,9 @@
                         </label>
                         <button onclick="exportProduk()" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white text-xs font-medium rounded-lg transition">📊 Export Excel</button>
                         <button onclick="printStokLengkap()" class="px-3 py-1.5 bg-blue-600/20 text-blue-500 hover:bg-blue-600 hover:text-white text-xs font-medium rounded-lg transition">🖨️ Cetak Laporan Stok</button>
+                        <!-- FITUR HAPUS TERPILIH & SEMUA PRODUK -->
+                        <button onclick="deleteSelectedProduk()" class="px-3 py-1.5 bg-rose-600/20 text-rose-500 hover:bg-rose-600 hover:text-white text-xs font-medium rounded-lg transition">🗑️ Hapus Terpilih</button>
+                        <button onclick="deleteAllProduk()" class="px-3 py-1.5 bg-red-700/30 text-red-400 hover:bg-red-600 hover:text-white text-xs font-medium rounded-lg transition">⚠️ Hapus Semua Produk</button>
                     </div>
                 </div>
 
@@ -261,6 +263,7 @@
                     <table id="produkTable" class="w-full text-left text-sm">
                         <thead>
                             <tr class="table-header border-b">
+                                <th class="p-3 w-10 text-center"><input type="checkbox" id="selectAllProduk" onchange="toggleSelectAllProduk(this)"></th>
                                 <th class="p-3">Kode</th>
                                 <th class="p-3">Nama Obat</th>
                                 <th class="p-3">Kategori</th>
@@ -329,6 +332,9 @@
                         </div>
                         <button onclick="exportLaporan()" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600 hover:text-white text-xs font-medium rounded-lg transition">📊 Export Laporan</button>
                         <button onclick="printLaporanPenjualan()" class="px-3 py-1.5 bg-blue-600/20 text-blue-500 hover:bg-blue-600 hover:text-white text-xs font-medium rounded-lg transition">🖨️ Cetak Laporan</button>
+                        <!-- FITUR HAPUS TERPILIH & SEMUA LAPORAN -->
+                        <button onclick="deleteSelectedLaporan()" class="px-3 py-1.5 bg-rose-600/20 text-rose-500 hover:bg-rose-600 hover:text-white text-xs font-medium rounded-lg transition">🗑️ Hapus Terpilih</button>
+                        <button onclick="deleteAllLaporan()" class="px-3 py-1.5 bg-red-700/30 text-red-400 hover:bg-red-600 hover:text-white text-xs font-medium rounded-lg transition">⚠️ Hapus Semua Laporan</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -345,11 +351,13 @@
                     <table id="laporanTable" class="w-full text-left text-sm">
                         <thead>
                             <tr class="border-b opacity-60">
+                                <th class="pb-2 w-10 text-center"><input type="checkbox" id="selectAllLaporan" onchange="toggleSelectAllLaporan(this)"></th>
                                 <th class="pb-2">Waktu / Tanggal</th>
                                 <th class="pb-2">Items Terjual</th>
                                 <th class="pb-2">Penerima</th>
                                 <th class="pb-2">Total Belanja</th>
                                 <th class="pb-2">Kasir</th>
+                                <th class="pb-2 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-500/20"></tbody>
@@ -763,6 +771,7 @@ function loadProduk(){
     let rows = "";
     dbProduk.forEach((p, i) => {
         rows += `<tr class="hover:bg-gray-500/10 border-b border-gray-500/10">
+            <td class="p-3 text-center"><input type="checkbox" class="chk-produk w-4 h-4 rounded cursor-pointer" value="${i}"></td>
             <td class="p-3 font-mono text-blue-500 font-semibold">${p.kode}</td>
             <td class="p-3 font-medium">${p.nama}</td>
             <td class="p-3 opacity-70">${p.kategori}</td>
@@ -776,6 +785,37 @@ function loadProduk(){
         </tr>`;
     });
     document.getElementById("produkTable").querySelector("tbody").innerHTML = rows;
+    let selectAll = document.getElementById("selectAllProduk");
+    if (selectAll) selectAll.checked = false;
+}
+
+/* FUNGSI MULTI-SELECT & HAPUS PRODUK */
+function toggleSelectAllProduk(master) {
+    document.querySelectorAll(".chk-produk").forEach(chk => chk.checked = master.checked);
+}
+
+function deleteSelectedProduk() {
+    let checkboxes = document.querySelectorAll(".chk-produk:checked");
+    if (checkboxes.length === 0) {
+        alert("Pilih setidaknya satu produk yang ingin dihapus!");
+        return;
+    }
+    if (confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} produk terpilih?`)) {
+        let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a, b) => b - a);
+        indices.forEach(idx => dbProduk.splice(idx, 1));
+        save(); loadProduk(); loadSelectProduk();
+    }
+}
+
+function deleteAllProduk() {
+    if (dbProduk.length === 0) {
+        alert("Tidak ada data produk untuk dihapus.");
+        return;
+    }
+    if (confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA data stok obat? Data tidak dapat dikembalikan!")) {
+        dbProduk = [];
+        save(); loadProduk(); loadSelectProduk();
+    }
 }
 
 function copyProdukData(i) {
@@ -920,7 +960,7 @@ function checkout(){
         total: total, kasir: currentUser.user
     });
 
-    save(); loadProduk(); loadLaporan(); loadSelectProduk();
+    save(); loadProduk(); loadLaporan(); loadSelectProduk(); populateYearFilter();
     
     currentNotaData = {
         noFaktur: noFaktur,
@@ -973,7 +1013,6 @@ function renderNotaPreview() {
     let d = currentNotaData;
 
     if (paperType === "nota") {
-        // VERSI 1: NOTA STRUK KASIR RINGKAS (80mm)
         container.style.width = "320px";
         let rows = d.cart.map(c => `
             <tr>
@@ -985,7 +1024,6 @@ function renderNotaPreview() {
         let logoImgTag = dbConfig.logo ? `<img src="${dbConfig.logo}" style="max-height:45px; max-width:45px; margin-bottom:4px; object-fit:contain;"><br>` : "";
         let customFooterText = dbConfig.footerStruk ? `<p style="margin:5px 0 2px 0; font-size:10px; font-weight:bold;">${dbConfig.footerStruk}</p>` : "";
 
-        // AREA TTD PENERIMA STRUK THERMAL
         let ttdPenerimaStrukHtml = "";
         if (d.ttdPenerimaActive) {
             let labelNama = d.penerimaName ? d.penerimaName : "....................";
@@ -1030,7 +1068,6 @@ function renderNotaPreview() {
             </div>
         `;
     } else {
-        // VERSI 2: FAKTUR PENJUALAN LENGKAP (A4)
         container.style.width = "100%";
         let logoHtml = dbConfig.logo ? `<img src="${dbConfig.logo}" style="max-height:65px; max-width:65px; object-fit:contain; margin-right:15px;">` : "";
         let ttdTag = dbConfig.ttd ? `<img src="${dbConfig.ttd}" style="height:55px; object-fit:contain; margin:2px auto;">` : `<div style="height:55px;"></div>`;
@@ -1047,7 +1084,6 @@ function renderNotaPreview() {
             </tr>
         `).join("");
 
-        // BLOK AREA TANDA TANGAN DUA SISI (PENERIMA vs PIHAK TOKO) - PERBAIKAN: Hapus Tulisan Nama Terang & Stempel/TTD
         let areaTtdPenerimaFaktur = "";
         if (d.ttdPenerimaActive) {
             let namaPenerimaLabel = d.penerimaName ? d.penerimaName : "........................................";
@@ -1121,7 +1157,6 @@ function renderNotaPreview() {
                     </div>
                 </div>
 
-                <!-- TAMPILAN TANDA TANGAN BERDAMPINGAN (PENERIMA DAN TOKO) -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; padding-top: 10px;">
                     ${areaTtdPenerimaFaktur}
                     <div style="width: 45%; text-align: center; margin-left: auto;">
@@ -1138,7 +1173,6 @@ function renderNotaPreview() {
     }
 }
 
-/* FUNGSI CETAK DENGAN POP-UP WINDOW */
 function triggerPrintNota() {
     let paperType = document.getElementById("paperTypeSelect").value;
     let contentHtml = document.getElementById("previewContainer").innerHTML;
@@ -1227,17 +1261,28 @@ function clearUserForm(){
 }
 function delUser(i){ if(dbUsers[i].user === 'admin') return; dbUsers.splice(i,1); save(); loadUsers(); }
 
+/* ============================================================
+   LAPORAN & FITUR HAPUS LAPORAN (TERPILIH / SEMUA)
+============================================================ */
 function loadLaporan(){
     let rows = ""; let total = 0;
     let filterBulan = document.getElementById("filterBulan").value;
     let filterTahun = document.getElementById("filterTahun").value;
     
-    dbLaporan.forEach(l => {
+    dbLaporan.forEach((l, i) => {
         let matchBulan = filterBulan === "ALL" || l.tanggal.toLowerCase().includes(filterBulan.toLowerCase());
         let matchTahun = filterTahun === "ALL" || l.tanggal.includes(filterTahun);
         
         if(matchBulan && matchTahun) {
-            rows += `<tr class="border-b border-gray-500/10"><td class="py-2">${l.tanggal}</td><td>${l.items}</td><td>${l.penerima || '-'}</td><td class="text-emerald-500 font-semibold">Rp ${l.total.toLocaleString()}</td><td>${l.kasir}</td></tr>`; 
+            rows += `<tr class="border-b border-gray-500/10">
+                <td class="py-2 text-center"><input type="checkbox" class="chk-laporan w-4 h-4 rounded cursor-pointer" value="${i}"></td>
+                <td class="py-2">${l.tanggal}</td>
+                <td>${l.items}</td>
+                <td>${l.penerima || '-'}</td>
+                <td class="text-emerald-500 font-semibold">Rp ${l.total.toLocaleString()}</td>
+                <td>${l.kasir}</td>
+                <td class="py-2 text-right"><button onclick="delLaporan(${i})" class="text-rose-500 text-xs">✕</button></td>
+            </tr>`; 
             total += l.total;
         }
     });
@@ -1251,6 +1296,44 @@ function loadLaporan(){
         return mB && mT;
     }).length;
     document.getElementById("repTotalTrx").innerText = filteredCount + " Transaksi";
+
+    let selectAll = document.getElementById("selectAllLaporan");
+    if (selectAll) selectAll.checked = false;
+}
+
+function delLaporan(i) {
+    if (confirm("Hapus catatan laporan transaksi ini?")) {
+        dbLaporan.splice(i, 1);
+        save(); loadLaporan(); populateYearFilter();
+    }
+}
+
+function toggleSelectAllLaporan(master) {
+    document.querySelectorAll(".chk-laporan").forEach(chk => chk.checked = master.checked);
+}
+
+function deleteSelectedLaporan() {
+    let checkboxes = document.querySelectorAll(".chk-laporan:checked");
+    if (checkboxes.length === 0) {
+        alert("Pilih setidaknya satu laporan yang ingin dihapus!");
+        return;
+    }
+    if (confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} laporan transaksi terpilih?`)) {
+        let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a, b) => b - a);
+        indices.forEach(idx => dbLaporan.splice(idx, 1));
+        save(); loadLaporan(); populateYearFilter();
+    }
+}
+
+function deleteAllLaporan() {
+    if (dbLaporan.length === 0) {
+        alert("Tidak ada riwayat laporan untuk dihapus.");
+        return;
+    }
+    if (confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA riwayat laporan penjualan? Data tidak dapat dikembalikan!")) {
+        dbLaporan = [];
+        save(); loadLaporan(); populateYearFilter();
+    }
 }
 
 function populateYearFilter() {
